@@ -3352,6 +3352,7 @@ class Qwen2_5OmniModel(Qwen2_5OmniPreTrainedModel):
         self.speaker_map = {}
         if config.enable_audio_output:
             self.enable_talker()
+        self.post_init()
 
     def enable_talker(self):
         self.talker = Qwen2_5OmniTalkerForConditionalGeneration(self.config.talker_config)
