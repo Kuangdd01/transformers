@@ -4100,7 +4100,7 @@ def kaiser_sinc_filter1d(cutoff, half_width, kernel_size):  # return filter [1,1
     if cutoff == 0:
         filter_ = torch.zeros_like(time)
     else:
-        filter_ = 2 * cutoff * window * torch.sinc(2 * cutoff * time)
+        filter_ = 2 * cutoff * window * torch.sinc(2 * cutoff * time).to(window.device)
         # Normalize filter to have sum = 1, otherwise we will have a small leakage
         # of the constant component in the input signal.
         filter_ /= filter_.sum()
