@@ -45,7 +45,7 @@ class Qwen2_5OmniProcessor(ProcessorMixin):
     [`~Qwen2_5OmniProcessor.__call__`] and [`~Qwen2_5OmniProcessor.decode`] for more information.
 
     Args:
-        omni_processor ([`Qwen2VLImageProcessor`], *optional*):
+        image_processor ([`Qwen2VLImageProcessor`], *optional*):
             The image processor.
         feature_extractor ([`WhisperFeatureExtractor`], *optional*):
             The audio feature extractor.
@@ -55,13 +55,13 @@ class Qwen2_5OmniProcessor(ProcessorMixin):
             The Jinja template to use for formatting the conversation. If not provided, the default chat template is used.
     """
 
-    attributes = ["omni_processor", "feature_extractor", "tokenizer"]
-    omni_processor_class = "Qwen2VLImageProcessor"
+    attributes = ["image_processor", "feature_extractor", "tokenizer"]
+    image_processor_class = "Qwen2VLImageProcessor"
     feature_extractor_class = "WhisperFeatureExtractor"
     tokenizer_class = ("Qwen2Tokenizer", "Qwen2TokenizerFast")
     valid_kwargs = ["chat_template"]
 
-    def __init__(self, omni_processor=None, feature_extractor=None, tokenizer=None, chat_template=None):
+    def __init__(self, image_processor=None, feature_extractor=None, tokenizer=None, chat_template=None):
         self.image_token = "<|IMAGE|>"
         self.audio_token = "<|AUDIO|>"
         self.video_token = "<|VIDEO|>"
@@ -69,7 +69,7 @@ class Qwen2_5OmniProcessor(ProcessorMixin):
         self.vision_eos_token = "<|vision_eos|>"
         self.audio_bos_token = "<|audio_bos|>"
         self.audio_eos_token = "<|audio_eos|>"
-        super().__init__(omni_processor, feature_extractor, tokenizer, chat_template=chat_template)
+        super().__init__(image_processor, feature_extractor, tokenizer, chat_template=chat_template)
 
     def __call__(
         self,
@@ -137,18 +137,18 @@ class Qwen2_5OmniProcessor(ProcessorMixin):
             audio_lengths = None
 
         if images is not None:
-            images_inputs = self.omni_processor(images=images, videos=None, **output_kwargs["images_kwargs"])
+            images_inputs = self.image_processor(images=images, videos=None, **output_kwargs["images_kwargs"])
             image_grid_thw = images_inputs["image_grid_thw"]
         else:
             images_inputs = {}
             image_grid_thw = None
 
         if videos is not None:
-            videos_inputs = self.omni_processor(images=None, videos=videos, **output_kwargs["videos_kwargs"])
+            videos_inputs = self.image_processor(images=None, videos=videos, **output_kwargs["videos_kwargs"])
             if fps is None:
                 fps = [2.0] * len(videos)
             videos_inputs["video_second_per_grid"] = [
-                self.omni_processor.temporal_patch_size / fps[i] for i in range(len(fps))
+                self.image_processor.temporal_patch_size / fps[i] for i in range(len(fps))
             ]
             video_grid_thw = videos_inputs["video_grid_thw"]
         else:
@@ -161,7 +161,7 @@ class Qwen2_5OmniProcessor(ProcessorMixin):
         if not isinstance(text, list):
             text = [text]
 
-        merge_length = self.omni_processor.merge_size**2
+        merge_length = self.image_processor.merge_size**2
         audio_index = 0
         image_index = 0
         video_index = 0
@@ -199,8 +199,8 @@ class Qwen2_5OmniProcessor(ProcessorMixin):
                             .view(-1, 1, 1)
                             .expand(
                                 -1,
-                                video_grid_thw[video_index][1] // self.omni_processor.merge_size,
-                                video_grid_thw[video_index][2] // self.omni_processor.merge_size,
+                                video_grid_thw[video_index][1] // self.image_processor.merge_size,
+                                video_grid_thw[video_index][2] // self.image_processor.merge_size,
                             )
                             .flatten()
                             * videos_inputs["video_second_per_grid"][video_index]
@@ -296,12 +296,12 @@ class Qwen2_5OmniProcessor(ProcessorMixin):
     def model_input_names(self):
         tokenizer_input_names = self.tokenizer.model_input_names
         feature_extractor_input_names = self.feature_extractor.model_input_names
-        omni_processor_input_names = self.omni_processor.model_input_names
+        image_processor_input_names = self.image_processor.model_input_names
         return list(
             dict.fromkeys(
                 tokenizer_input_names
                 + feature_extractor_input_names
-                + omni_processor_input_names
+                + image_processor_input_names
                 + ["feature_attention_mask"]
                 + ["video_second_per_grid"]
             )
