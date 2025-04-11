@@ -474,7 +474,9 @@ class Qwen2_5OmniPreTrainedModelForConditionalGeneration(Qwen2_5OmniPreTrainedMo
                     llm_pos_ids_list.append(torch.arange(text_len).view(1, -1).expand(3, -1) + st_idx)
 
                 llm_positions = torch.cat(llm_pos_ids_list, dim=1).reshape(3, -1)
-
+                print(llm_positions.shape)
+                print(f'attn_mask:{attention_mask.shape}')
+                print(f"pos_id:{position_ids.shape}")
                 position_ids[..., i, attention_mask[i] == 1] = llm_positions.to(position_ids.device)
                 mrope_position_deltas.append(llm_positions.max() + 1 - len(input_ids))
             mrope_position_deltas = torch.tensor(mrope_position_deltas, device=input_ids.device).unsqueeze(1)
@@ -1228,8 +1230,8 @@ class Qwen2_5OmniVisionFlashAttention2(nn.Module):
 
     def _apply_rotary_pos_emb_flashatt(self, tensor: torch.Tensor, freqs: torch.Tensor) -> torch.Tensor:
         tensor_ = tensor.float()
-        cos = freqs.cos()  # .type_as(tensor_)
-        sin = freqs.sin()  # .type_as(tensor_)
+        cos = freqs.cos().type_as(tensor_) # make sure type alignment with fp32
+        sin = freqs.sin().type_as(tensor_)
         output = apply_rotary_emb(tensor_, cos, sin).type_as(tensor)
         return output
 
@@ -4763,7 +4765,6 @@ class Qwen2_5OmniModel(Qwen2_5OmniPreTrainedModel):
             "repetition_penalty": talker_repetition_penalty,
         }
         token2wav_kwargs = {}
-
         for key, value in kwargs.items():
             if key.startswith("thinker_"):
                 thinker_kwargs[key[len("thinker_") :]] = value
