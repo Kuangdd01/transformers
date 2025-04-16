@@ -277,7 +277,7 @@ def write_model(
     print("Reloading the model to check if it's saved correctly.")
     model = InternVLForConditionalGeneration.from_pretrained(model_path, device_map="auto", torch_dtype=torch.bfloat16)
     image_processor = GotOcr2ImageProcessor.from_pretrained(model_path)
-    tokenizer = AutoTokenizer.from_pretrained(model_path)
+    tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
     processor = InternVLProcessor(image_processor=image_processor, tokenizer=tokenizer, chat_template=chat_template)
     processor.save_pretrained(model_path)
     if push_to_hub:
@@ -314,8 +314,9 @@ def write_tokenizer(save_dir: str, push_to_hub: bool = False, path: str = None, 
         # )
         # tokenizer_llama_fast._tokenizer.pre_tokenizer.prepend_scheme = "never"
         # Then manually modifying `added_tokens_decoder` indices to match the original tokenizer
+        print("saving internlm tokenizer...")
         tokenizer = AutoTokenizer.from_pretrained(
-            "./intern_vl_hf_implem/tokenizer_internvl_llama_fast", return_token_type_ids=False
+            "internlm/internlm2-chat-7b", return_token_type_ids=False, trust_remote_code=True
         )
 
     tokenizer.chat_template = chat_template
@@ -346,12 +347,12 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--input_dir",
-        default="OpenGVLab/InternVL3-8B",
+        default="OpenGVLab/InternVL2_5-2B-MPO",
         help="Location of original InternVL model",
     )
     parser.add_argument(
         "--output_dir",
-        default="InternVL3-8B-hf",
+        default="./InternVL2_5-2B-MPO-hf",
         help="Location to write HF model and processors",
     )
     parser.add_argument(
